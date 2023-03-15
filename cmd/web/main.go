@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/alexedwards/scs/redisstore"
@@ -36,6 +38,7 @@ func main() {
 		Wait:     &wg,
 	}
 
+	go app.listenForShutdown()
 	app.serve()
 }
 
@@ -78,7 +81,6 @@ func openDB(dsn string) (*sql.DB, error) {
 }
 
 func initSession() *scs.SessionManager {
-	// set up session
 	session := scs.New()
 	session.Store = redisstore.New(initRedis())
 	session.Lifetime = 24 * time.Hour
@@ -112,4 +114,20 @@ func (app *Config) serve() {
 	if err != nil {
 		log.Panic(err)
 	}
+}
+
+func (app *Config) listenForShutdown() {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	app.shutdown()
+	os.Exit(0)
+}
+
+func (app *Config) shutdown() {
+	app.InfoLog.Println("Waiting for shutdown...")
+
+	app.Wait.Wait()
+
+	app.InfoLog.Println("Shutting down.")
 }
