@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"simple-mailer-go/data"
 	"sync"
 	"syscall"
 	"time"
@@ -36,6 +37,7 @@ func main() {
 		InfoLog:  infoLog,
 		ErrorLog: errorLog,
 		Wait:     &wg,
+		Models:   data.New(db),
 	}
 
 	go app.listenForShutdown()
@@ -103,7 +105,6 @@ func initRedis() *redis.Pool {
 }
 
 func (app *Config) serve() {
-	// start http server
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: app.routes(),
