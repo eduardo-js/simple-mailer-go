@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"simple-mailer-go/data"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type TemplateData struct {
 	Error         string
 	Authenticated bool
 	Now           time.Time
+	User          *data.User
 }
 
 func (app *Config) render(w http.ResponseWriter, r *http.Request, t string, td *TemplateData) {
@@ -59,6 +61,13 @@ func (app *Config) AddDefaultData(td *TemplateData, r *http.Request) *TemplateDa
 	td.Error = app.Session.PopString(r.Context(), "error")
 	if app.IsAuthenticated(r) {
 		td.Authenticated = true
+		user, ok := app.Session.Get(r.Context(), "user").(data.User)
+		if !ok {
+			app.ErrorLog.Println("Cannot get user from session")
+		} else {
+			td.User = &user
+		}
+
 	}
 	td.Now = time.Now()
 
