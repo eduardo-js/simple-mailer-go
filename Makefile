@@ -2,6 +2,7 @@ BINARY_NAME=myapp
 DSN="host=localhost port=5432 user=postgres password=password dbname=concurrency sslmode=disable timezone=UTC connect_timeout=5"
 REDIS="127.0.0.1:6379"
 PORT="3000"
+EMAIL_SIGNER_SECRET_KEY="abc123abc123abc123"
 
 ## build: Build binary
 build:
@@ -12,7 +13,7 @@ build:
 ## run: builds and runs the application
 run: build
 	@echo "Starting..."
-	@env DSN=${DSN} REDIS=${REDIS} PORT=${PORT} ./${BINARY_NAME} &
+	@env DSN=${DSN} REDIS=${REDIS} PORT=${PORT} EMAIL_SIGNER_SECRET_KEY=${EMAIL_SIGNER_SECRET_KEY} ./${BINARY_NAME} &
 	@echo "Started!"
 
 ## clean: runs go clean and deletes binaries
