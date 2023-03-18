@@ -33,17 +33,32 @@ func main() {
 	wg := sync.WaitGroup{}
 
 	app := Config{
-		Session:  session,
-		DB:       db,
-		InfoLog:  infoLog,
-		ErrorLog: errorLog,
-		Wait:     &wg,
-		Models:   data.New(db),
+		Session:   session,
+		DB:        db,
+		InfoLog:   infoLog,
+		ErrorLog:  errorLog,
+		Wait:      &wg,
+		Models:    data.New(db),
+		ErrorChan: make(chan error),
+		DoneChan:  make(chan bool),
 	}
 	app.Mailer = app.createMail()
 	go app.listenForMail()
+	go app.listenForErrors()
 	go app.listenForShutdown()
+
 	app.serve()
+}
+
+func (app *Config) listenForErrors() {
+	for {
+		select {
+		case err := <-app.ErrorChan:
+			app.ErrorLog.Println(err)
+		case <-app.DoneChan:
+			return
+		}
+	}
 }
 
 func initDB() *sql.DB {
@@ -133,10 +148,12 @@ func (app *Config) shutdown() {
 
 	app.Wait.Wait()
 	app.Mailer.DoneChan <- true
+	app.DoneChan <- true
 
 	close(app.Mailer.MailerChan)
 	close(app.Mailer.DoneChan)
 	close(app.Mailer.ErrorChan)
+	close(app.DoneChan)
 	app.InfoLog.Println("Shutting down.")
 }
 
